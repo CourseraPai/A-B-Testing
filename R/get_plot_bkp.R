@@ -1,0 +1,46 @@
+#' 
+#' get_plot(data,type,slider)
+
+get_plot_bkp <- function(data,type,slider,day) {
+	
+	if(type=="bar"){
+		
+		plot <- data %>% 
+			dplyr::select(version,retention_1) %>% 
+			group_by(version) %>% 
+			summarise(mean_retention_1_by_gate=mean(retention_1)) %>% 
+			ggplot(aes(x=version,y=mean_retention_1_by_gate,label=round(mean_retention_1_by_gate,2)*100))+
+			geom_bar(width=0.5,aes(fill=version),stat="identity")+
+			theme(legend.position="None",
+						plot.background = element_blank(),
+						panel.background = element_rect(color="white",fill="NA"))+
+			ggtitle(label="One Day Retention Mean")+
+			scale_y_continuous(labels=scales::percent,limits=c(0,0.45),breaks=seq(0,0.5,by=0.01))+
+			geom_text(size = 3, position = position_stack(vjust = 0.5))
+		
+		return(plot)
+		
+	}else if(type=="boot"){
+		
+		boot_sample <- data.frame(gate_30=numeric(),gate_40=numeric())
+			
+		for(i in 1:slider){
+			boot_sample[i, ]  <- data[sample(1:nrow(data), nrow(data), replace = TRUE), ]%>% 
+				group_by(version) %>% summarise(mean_gate = mean(retention_1)) %>% ungroup() %>% spread(version, mean_gate)
+		}
+		
+		plot <- boot_sample %>% 
+			gather(key=slider,value=value) %>% 
+			ggplot(aes(x=value,group=slider))+
+			geom_density(aes(fill=slider),alpha=0.5)+
+			theme(legend.position="None",
+						plot.background = element_blank(),
+						panel.background = element_rect(color="white",fill="NA"))+
+			ggtitle(label="One Day Retention Bootstrapped Sample Mean")
+		
+		return(plot)
+	}
+
+  
+
+}
